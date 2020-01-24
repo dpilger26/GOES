@@ -4,7 +4,6 @@ Simple script for downloading GOES data from AWS
 # ======================================================================================================================
 import os
 import pathlib
-import re
 from enum import Enum
 from typing import List, Union
 
@@ -13,8 +12,7 @@ import s3fs
 
 # ======================================================================================================================
 # Constants
-FILL_VALUE = 0x3fff
-AWS_BUCKETS = 's3://noaa-goes{SCID}/ABI-L1b-RadF/{year}/{dayOfYear:03}/{hour:02}'
+AWS_BUCKETS = 's3://noaa-goes{SCID}/ABI-L1b-RadF/{year}/{dayOfYear:03}/{hour:02}/*-M6C{band:02}_*'
 
 
 # ======================================================================================================================
@@ -84,8 +82,6 @@ def download(outputDir: str,
     if not os.path.isdir(bandDir):
         os.mkdir(bandDir)
 
-    tokenizer = re.compile(r'.*-M6C(\d{2})_.*')
-
     fs = s3fs.S3FileSystem(anon=True)
 
     downloadedFiles = list()
@@ -107,23 +103,22 @@ def download(outputDir: str,
             if not os.path.isdir(hourDir):
                 os.mkdir(hourDir)
 
-            files = fs.ls(AWS_BUCKETS.format(SCID=scid.value,
-                                             year=year,
-                                             dayOfYear=theDay,
-                                             hour=theHour))
+            files = fs.glob(AWS_BUCKETS.format(SCID=scid.value,
+                                               year=year,
+                                               dayOfYear=theDay,
+                                               hour=theHour,
+                                               band=band.value))
 
             if len(files) == 0:
-                print(f'No data files found for scid={scid} year={year} dayOfYear={theDay} hour={theHour}')
+                print(f'No data files found for '
+                      f'scid={scid.name} '
+                      f'year={year} '
+                      f'dayOfYear={theDay} '
+                      f'hour={theHour} '
+                      f'band={band.name}')
                 continue
 
             for file in files:
-                bandToken = tokenizer.findall(file)
-                if len(bandToken) != 1:
-                    raise RuntimeError(f'Unable to parse band from\n\t{file}')
-
-                if int(bandToken[0]) != band.value:
-                    continue
-
                 path = pathlib.Path(file)
                 newName = os.path.join(hourDir, path.name)
 
