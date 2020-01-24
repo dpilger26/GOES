@@ -4,6 +4,7 @@ Simple script for downloading GOES data from AWS
 # ======================================================================================================================
 import os
 import pathlib
+import re
 from enum import Enum
 from typing import List, Union
 
@@ -21,13 +22,37 @@ class SCID(Enum):
     """
     The goes spacecraft id
     """
-    SCID16 = 16
-    SCID17 = 17
+    SCID_16 = 16
+    SCID_17 = 17
+
+
+# ======================================================================================================================
+class Band(Enum):
+    """
+    The goes detection band
+    """
+    BLUE_1 = 1
+    RED_2 = 2
+    VEGGIE_3 = 3
+    CIRRUS_4 = 4
+    SNOW_ICE_5 = 5
+    CLOUD_PARTICLE_6 = 6
+    SWIR_7 = 7
+    UPPER_TROPOSHERE_8 = 8
+    MID_TROPOSHERE_9 = 9
+    LOW_TROPOSHERE_10 = 10
+    CLOUD_TOP_11 = 11
+    OZONE_12 = 12
+    CLEAN_LWIR_13 = 13
+    LWIR_14 = 14
+    DIRTY_LWIR_14 = 15
+    CO2_LWIR_16 = 16
 
 
 # ======================================================================================================================
 def download(outputDir: str,
              scid: SCID,
+             band: Band,
              year: int,
              dayOfYear: Union[int, List[int]],
              hour: Union[int, List[int]]) -> List[str]:
@@ -38,6 +63,7 @@ def download(outputDir: str,
         outputDir: the directory to save the downloaded files.  If the directory does not exist it
                    will attempt to be created
         scid: the spacecraft id
+        band: the detection band
         year: the year
         dayOfYear: the day of the year
         hour: the hour of the day
@@ -54,6 +80,12 @@ def download(outputDir: str,
     if type(hour) is not list:
         hour = [hour]
 
+    bandDir = os.path.join(outputDir, f'{band.name}')
+    if not os.path.isdir(bandDir):
+        os.mkdir(bandDir)
+
+    tokenizer = re.compile(r'.*-M6C(\d{2})_.*')
+
     fs = s3fs.S3FileSystem(anon=True)
 
     downloadedFiles = list()
@@ -62,7 +94,7 @@ def download(outputDir: str,
             print(f'Input dayOfYear={theDay} is not valid. Valid range is [0, 365]')
             continue
 
-        dayDir = os.path.join(outputDir, f'day{theDay:03}')
+        dayDir = os.path.join(bandDir, f'day{theDay:03}')
         if not os.path.isdir(dayDir):
             os.mkdir(dayDir)
 
@@ -75,7 +107,7 @@ def download(outputDir: str,
             if not os.path.isdir(hourDir):
                 os.mkdir(hourDir)
 
-            files = fs.ls(AWS_BUCKETS.format(SCID=scid,
+            files = fs.ls(AWS_BUCKETS.format(SCID=scid.value,
                                              year=year,
                                              dayOfYear=theDay,
                                              hour=theHour))
@@ -85,6 +117,13 @@ def download(outputDir: str,
                 continue
 
             for file in files:
+                bandToken = tokenizer.findall(file)
+                if len(bandToken) != 1:
+                    raise RuntimeError(f'Unable to parse band from\n\t{file}')
+
+                if int(bandToken[0]) != band.value:
+                    continue
+
                 path = pathlib.Path(file)
                 newName = os.path.join(hourDir, path.name)
 
@@ -93,3 +132,14 @@ def download(outputDir: str,
                 downloadedFiles.append(newName)
 
     return downloadedFiles
+
+
+# ======================================================================================================================
+if __name__ == '__main__':
+    CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
+    FILES = download(outputDir=os.path.join(CURRENT_DIR, r'..\data\test'),
+                     scid=SCID.SCID_16,
+                     band=Band.SWIR_7,
+                     year=2019,
+                     dayOfYear=list(range(200, 205)),
+                     hour=list(range(24)))
