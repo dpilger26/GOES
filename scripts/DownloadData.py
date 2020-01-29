@@ -69,6 +69,8 @@ def download(outputDir: str,
     Returns:
         np.ndarray
     """
+    # TODO: add start and stop options
+
     if not os.path.isdir(outputDir):
         os.mkdir(outputDir)
 
@@ -134,7 +136,7 @@ if __name__ == '__main__':
     CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
     FILES = download(outputDir=os.path.join(CURRENT_DIR, r'..\data\test'),
                      scid=SCID.SCID_16,
-                     band=Band.SWIR_7,
+                     band=Band.RED_2,
                      year=2019,
-                     dayOfYear=list(range(200, 205)),
-                     hour=list(range(24)))
+                     dayOfYear=list(range(202, 203)),
+                     hour=list(range(17, 18)))
