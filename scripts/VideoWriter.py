@@ -134,6 +134,15 @@ class VideoWriter:
         buf, [width, height] = fig.canvas.print_to_buffer()
         imageData = np.frombuffer(buffer=buf, dtype=np.uint8).reshape(height, width, 4)
 
+        # Create if None
+        if self._videoWriter is None:
+            frameSize = (imageData.shape[1], imageData.shape[0])
+            self._videoWriter = cv2.VideoWriter(filename=self._filename + '.mp4',
+                                                fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
+                                                fps=self._fps,
+                                                frameSize=frameSize,
+                                                isColor=self._isColor)
+
         # numpy is [R, G, B, A] and opencv is [B, G, R, A] so
         # switch the color channels around
         red = imageData[:, :, 0]
@@ -151,5 +160,5 @@ class VideoWriter:
         """
         Releases the newly written video object
         """
-        if self._videoWriter.isOpened():
+        if self._videoWriter is not None and self._videoWriter.isOpened():
             self._videoWriter.release()

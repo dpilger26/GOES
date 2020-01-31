@@ -134,9 +134,18 @@ def download(outputDir: str,
 # ======================================================================================================================
 if __name__ == '__main__':
     CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
-    FILES = download(outputDir=os.path.join(CURRENT_DIR, r'..\data\test'),
-                     scid=SCID.SCID_16,
-                     band=Band.RED_2,
-                     year=2019,
-                     dayOfYear=list(range(202, 203)),
-                     hour=list(range(17, 18)))
+    OUTPUT_DIR = os.path.join(CURRENT_DIR, r'..\data\test')
+
+    SC_ID = SCID.SCID_16
+    BANDS = [Band.BLUE_1, Band.SWIR_7]
+    YEAR = 2019
+    DAY_OF_YEAR = list(range(200, 210))
+    HOUR = list(range(24))
+
+    for BAND in BANDS:
+        FILES_BLUE = download(outputDir=OUTPUT_DIR,
+                              scid=SC_ID,
+                              band=BAND,
+                              year=YEAR,
+                              dayOfYear=DAY_OF_YEAR,
+                              hour=HOUR)
