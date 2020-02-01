@@ -164,6 +164,7 @@ def makeMovie(dataDirs: List[str],
         movieFig.update()
         vw.addMatplotlibFigureHandle(fig=movieFig.fig,
                                      doPlot=False)
+        plt.close(movieFig.fig)
 
 
 # ======================================================================================================================
