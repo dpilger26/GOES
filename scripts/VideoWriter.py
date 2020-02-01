@@ -99,8 +99,8 @@ class VideoWriter:
         # Create if None
         if self._videoWriter is None:
             frameSize = (frame.shape[1], frame.shape[0])
-            self._videoWriter = cv2.VideoWriter(filename=self._filename + '.mp4',
-                                                fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
+            self._videoWriter = cv2.VideoWriter(filename=self._filename + '.avi',
+                                                fourcc=cv2.VideoWriter_fourcc(*'MJPG'),
                                                 fps=self._fps,
                                                 frameSize=frameSize,
                                                 isColor=self._isColor)
@@ -132,16 +132,7 @@ class VideoWriter:
         """
         # extract the image info as a numpy array
         buf, [width, height] = fig.canvas.print_to_buffer()
-        imageData = np.frombuffer(buffer=buf, dtype=np.uint8).reshape(height, width, 4)
-
-        # Create if None
-        if self._videoWriter is None:
-            frameSize = (imageData.shape[1], imageData.shape[0])
-            self._videoWriter = cv2.VideoWriter(filename=self._filename + '.mp4',
-                                                fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
-                                                fps=self._fps,
-                                                frameSize=frameSize,
-                                                isColor=self._isColor)
+        imageData = np.frombuffer(buffer=buf, dtype=np.uint8).reshape(height, width, 4)[:, :, :-1]  # strip alpha
 
         # numpy is [R, G, B, A] and opencv is [B, G, R, A] so
         # switch the color channels around
@@ -152,8 +143,17 @@ class VideoWriter:
         imageDataCv[:, :, 0] = blue
         imageDataCv[:, :, 2] = red
 
-        self.addFrame(frame=imageDataCv[:, :, :-1],  # remove the alpha channel
-                      doPlot=doPlot)
+        # matplotlib is weird sometimes...
+        if width != fig.canvas.width() or height != fig.canvas.height():
+            imageResized = cv2.resize(src=imageDataCv,
+                                      dsize=(fig.canvas.width(), fig.canvas.height()),
+                                      interpolation=cv2.INTER_CUBIC)
+
+            self.addFrame(frame=imageResized,
+                          doPlot=doPlot)
+        else:
+            self.addFrame(frame=imageDataCv,
+                          doPlot=doPlot)
 
     # ==================================================================================================================
     def release(self) -> None:

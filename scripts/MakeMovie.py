@@ -12,11 +12,15 @@ import DownloadData
 import ReadNetCDF4
 import VideoWriter
 
+plt.style.use('myDarkStyle.mplstyle')
+
 # ======================================================================================================================
 # Constants
 FILL_VALUE = 0x3fff
 FILL_VALUE2 = 1023
 CMAP = 'hot'
+FPS = 12
+FIG_SIZE = [16, 9]
 
 
 # ======================================================================================================================
@@ -114,7 +118,7 @@ def makeMovie(dataDirs: List[str],
         os.mkdir(outputDir)
 
     vw = VideoWriter.VideoWriter(filename=os.path.join(outputDir, outputName),
-                                 fps=10,
+                                 fps=FPS,
                                  isColor=True)
 
     allFiles = list()
@@ -125,10 +129,12 @@ def makeMovie(dataDirs: List[str],
     if numFiles.count(numFiles[0]) != len(numFiles):
         raise RuntimeError(f'Different number of image files in the data directories')
 
-    movieFig = MovieFigure(numImages=len(dataDirs),
-                           figsize=(19.2, 10.8))
-
     for fileIdx in range(len(allFiles[0])):
+        # matplotlib appears to be a memory hog for some reason, so instantiate a new fig for each set of files
+        # instead of simply updating...
+        movieFig = MovieFigure(numImages=len(dataDirs),
+                               figsize=FIG_SIZE)
+
         for dirIdx in range(len(allFiles)):
             file = allFiles[dirIdx][fileIdx]
             print(f'Processing File {file}')
@@ -157,7 +163,7 @@ def makeMovie(dataDirs: List[str],
                                   cmap=CMAP)
         movieFig.update()
         vw.addMatplotlibFigureHandle(fig=movieFig.fig,
-                                     doPlot=True)
+                                     doPlot=False)
 
 
 # ======================================================================================================================
@@ -193,11 +199,12 @@ def getAllImageFiles(dataDir: str) -> List[pathlib.Path]:
 # ======================================================================================================================
 if __name__ == '__main__':
     MOVIE_NAME = 'GOES_16'
-    OUTPUT_DIR = r'C:\Users\pilgeda\Documents\GitHub\GOES\data\test'
+    OUTPUT_DIR = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, '..', 'movie')
+    DATA_TOP_DIR = os.path.join(pathlib.Path(os.path.abspath(__file__)).parent, '..', 'data')
 
     DATA_DIRS = list()
-    DATA_DIRS.append(r'C:\Users\pilgeda\Documents\GitHub\GOES\data\test\BLUE_1')
-    DATA_DIRS.append(r'C:\Users\pilgeda\Documents\GitHub\GOES\data\test\SWIR_7')
+    DATA_DIRS.append(os.path.join(DATA_TOP_DIR, 'BLUE_1'))
+    DATA_DIRS.append(os.path.join(DATA_TOP_DIR, 'SWIR_7'))
 
     CMAX = [600, 4]
 

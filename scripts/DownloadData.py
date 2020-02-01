@@ -134,7 +134,7 @@ def download(outputDir: str,
 # ======================================================================================================================
 if __name__ == '__main__':
     CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
-    OUTPUT_DIR = os.path.join(CURRENT_DIR, r'..\data\test')
+    OUTPUT_DIR = os.path.join(CURRENT_DIR, r'..\data')
 
     SC_ID = SCID.SCID_16
     BANDS = [Band.BLUE_1, Band.SWIR_7]
